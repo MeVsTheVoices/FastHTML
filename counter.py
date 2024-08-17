@@ -17,6 +17,7 @@ def home():
         Button("Decrement", hx_post="/decrement", hx_target="#count", hx_swap="innerHTML"),
         cls="container"
     )
+
 @app.post("/set")
 def set_count(data:str):
     global count
