@@ -1,2 +1,4 @@
 /.sesskey
+/.venv
 /__pycache__
+/static
