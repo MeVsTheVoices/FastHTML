@@ -6,6 +6,15 @@ flexbox_grid = "https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexbox
 
 to_dos = []
 
+grid_template = '''
+        display: grid;
+        grid-template-columns: 4fr 1fr;
+        grid-column-gap: 20px
+        grid-row-gap: 40px
+        justify-items: stretch
+        align-items: stretch
+'''
+
 @app.get("/")
 def home():
     return Title("To Do List"), Main(
@@ -17,10 +26,10 @@ def home():
                    hx_target="#to_do_list", hx_swap="innerHTML"),
             role="group"
         ),
-        Ul(
+        Div(
             hx_get= "/to_do", hx_swap="innerHTML", 
             hx_target="#to_do_list", hx_trigger="load",
-            id="to_do_list",
+            id="to_do_list", cls="gridded"
         ),  
         cls="container"
         )
@@ -28,11 +37,13 @@ def home():
 
 @app.get("/to_do")
 def to_do():
-    return Ul(
-        *[Li (Span(to_do), 
+    return Div(
+        *[(Span(to_do), 
               Button("Remove", hx_delete=f"/to_do?data={i}", 
-                     hx_target="#to_do_list", hx_swap="innerHTML"), 
-              id=f"to_do_{i}") for i, to_do in enumerate(to_dos)]
+                     hx_target="#to_do_list", hx_swap="innerHTML",
+                     style="margin-bottom: 20px;"))
+                       for i, to_do in enumerate(to_dos)],
+        style=grid_template
     )
 
 @app.post("/to_do")
