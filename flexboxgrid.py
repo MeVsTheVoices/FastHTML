@@ -1,12 +1,13 @@
 from fasthtml.common import *
 
-app = FastHTML(hdrs=(picolink))
-# ... other imports and code
+gridlink = Link(rel="stylesheet", href="https://cdnjs.cloudflare.com/ajax/libs/flexboxgrid/6.3.1/flexboxgrid.min.css", type="text/css")
+
+# Our FastHTML app
+app = FastHTML(hdrs=(picolink, gridlink))
 
 @app.get('/')
 def index():
     return Html(
-        Head(Link(rel="stylesheet", href="https://cdn.jsdelivr.net/flexboxgrid/6.3.1/flexboxgrid.min.css")),
         Body(
             Div(
                 Div(

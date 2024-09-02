@@ -25,13 +25,15 @@ def home():
 def calculate(data:str):
     # convert to bit array
     network_bitarray, host_bitarray = cidr_to_bitarrays(data)
+    network_ip, broadcast_ip = calculate_ips(network_bitarray, host_bitarray)
     errors = cidr_check(network_bitarray, host_bitarray)
-    print(network_bitarray)
-    print(host_bitarray)
     print(errors)
     if not errors:
     #if not cidr_check_results:
-        return build_response(str(bitarray.util.ba2int(host_bitarray) - 2), bitarray_to_ip(network_bitarray), bitarray_to_ip(network_bitarray | host_bitarray))
+        return build_response(
+            str(bitarray.util.ba2int(host_bitarray) - 1), 
+            bitarray_to_ip(network_ip), 
+            bitarray_to_ip(broadcast_ip))
     else:
         return Form(
                     Div(Label("Error"), Output(errors, id="output_error")),
@@ -51,10 +53,20 @@ def build_response(range: str, network: str, broadcast: str) -> Form:
 def cidr_to_bitarrays(data):
     network, hosts = data.split("/")
     network_bitarray = bitarray.bitarray(''.join([bin(int(x))[2:].zfill(8) for x in network.split('.')]))
-    host_bitarray = bitarray.bitarray(''.join(['1' for x in range(0, 32 - int(hosts))]))
+
+    host_bitarray = bitarray.bitarray(''.join(['1' for x in range(0, 32 - int(hosts) + 1)]))
     hosts_padding_length = len(network_bitarray) - len(host_bitarray)
-    host_bitarray= bitarray.bitarray('0' * hosts_padding_length) + host_bitarray
+    host_bitarray = bitarray.bitarray('0' * hosts_padding_length) + host_bitarray
+
     return network_bitarray, host_bitarray
+
+def calculate_ips(network_bitarray, host_bitarray):
+    inverted_host_bitarray = host_bitarray.copy()
+    inverted_host_bitarray.invert()
+    network_ip = network_bitarray & inverted_host_bitarray
+    broadcast_ip = network_ip | host_bitarray
+
+    return network_ip, broadcast_ip
 
 def cidr_check(network_bitarray, host_bitarray):
     return None
