@@ -16,13 +16,7 @@ def home():
                                hx_target="#cidr_form", hx_swap="outerHTML"),
                         role="group"
                     ),
-                    Form(
-                        Div(Label("Range"), Input(id="output_range")),
-                        Div(Label("Network"), Input(id="output_broadcast")),
-                        Div(Label("Broadcast"), Input(id="output_broadcast")),
-                        role="group",
-                        id="cidr_form"
-                    ),
+                    build_response("", "", ""),
                     cls="container"
                 )
             )
@@ -37,13 +31,7 @@ def calculate(data:str):
     print(errors)
     if not errors:
     #if not cidr_check_results:
-        return Form(
-                    Div(Label("Range"), Input(str(bitarray.util.ba2int(host_bitarray) - 2), id="output_range")),
-                    Div(Label("Network"), Input(bitarray_to_ip(network_bitarray), id="output_broadcast")),
-                    Div(Label("Broadcast"), Input(bitarray_to_ip(network_bitarray | host_bitarray), id="output_broadcast")),
-                    role="group",
-                    id="cidr_form"
-                )
+        return build_response(str(bitarray.util.ba2int(host_bitarray) - 2), bitarray_to_ip(network_bitarray), bitarray_to_ip(network_bitarray | host_bitarray))
     else:
         return Form(
                     Div(Label("Error"), Output(errors, id="output_error")),
@@ -51,6 +39,14 @@ def calculate(data:str):
                     id="cidr_form"
                 )
 
+def build_response(range: str, network: str, broadcast: str) -> Form:
+    return Form(
+                Div(Label("Range"), Input(value=range, id="output_range", disabled=True)),
+                Div(Label("Network"), Input(value=network, id="output_broadcast", disabled=True)),
+                Div(Label("Broadcast"), Input(value=broadcast, id="output_broadcast", disabled=True)),
+                role="group",
+                id="cidr_form"
+            )
 
 def cidr_to_bitarrays(data):
     network, hosts = data.split("/")
