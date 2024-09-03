@@ -1,6 +1,8 @@
 import bitarray.util
 from fasthtml.common import *
 
+import re
+
 app = FastHTML(hdrs=(picolink))
 
 import bitarray
@@ -16,24 +18,31 @@ def home():
                                hx_target="#cidr_form", hx_swap="outerHTML"),
                         role="group"
                     ),
-                    build_response("", "", ""),
+                    build_response("", "", "", ""),
                     cls="container"
                 )
             )
 
 @app.post("/calculate")
 def calculate(data:str):
-    # convert to bit array
+    if not re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,2}$", data):
+        return build_error("Invalid CIDR notation")
+    match = re.findall(r"(\d{1,3})", data)
+    if any([int(x) > 255 for x in match]):
+        return build_error("Invalid IP address")
+        if any([int(x) > 255 for x in match]):
+            return build_error("Invalid IP address")
+        
+
     network_bitarray, host_bitarray = cidr_to_bitarrays(data)
-    network_ip, broadcast_ip = calculate_ips(network_bitarray, host_bitarray)
+    network_ip, broadcast_ip, subnet_mask = calculate_ips(network_bitarray, host_bitarray)
     errors = cidr_check(network_bitarray, host_bitarray)
-    print(errors)
     if not errors:
-    #if not cidr_check_results:
         return build_response(
-            str(bitarray.util.ba2int(host_bitarray) - 1), 
+            f"{(bitarray.util.ba2int(host_bitarray) - 2):,}", 
             bitarray_to_ip(network_ip), 
-            bitarray_to_ip(broadcast_ip))
+            bitarray_to_ip(broadcast_ip),
+            bitarray_to_ip(subnet_mask))
     else:
         return Form(
                     Div(Label("Error"), Output(errors, id="output_error")),
@@ -41,20 +50,23 @@ def calculate(data:str):
                     id="cidr_form"
                 )
 
-def build_response(range: str, network: str, broadcast: str) -> Form:
+def build_response(range: str, network: str, broadcast: str, subnet_mask: str) -> Form:
     return Form(
-                Div(Label("Range"), Input(value=range, id="output_range", disabled=True)),
-                Div(Label("Network"), Input(value=network, id="output_broadcast", disabled=True)),
-                Div(Label("Broadcast"), Input(value=broadcast, id="output_broadcast", disabled=True)),
+                Div(Label("Hosts"), Input(value=range, id="output_range", readonly=True)),
+                Div(Label("Network"), Input(value=network, id="output_broadcast", readonly=True)),
+                Div(Label("Broadcast"), Input(value=broadcast, id="output_broadcast", readonly=True)),
+                Div(Label("Subnet Mask"), Input(value=subnet_mask, id="output_subnet_mask", readonly=True)),
                 role="group",
                 id="cidr_form"
             )
+def build_error(error: str) -> Form:
+    return Blockquote(error, id="cidr_form")
 
 def cidr_to_bitarrays(data):
     network, hosts = data.split("/")
     network_bitarray = bitarray.bitarray(''.join([bin(int(x))[2:].zfill(8) for x in network.split('.')]))
 
-    host_bitarray = bitarray.bitarray(''.join(['1' for x in range(0, 32 - int(hosts) + 1)]))
+    host_bitarray = bitarray.bitarray(''.join(['1' for x in range(0, 32 - int(hosts))]))
     hosts_padding_length = len(network_bitarray) - len(host_bitarray)
     host_bitarray = bitarray.bitarray('0' * hosts_padding_length) + host_bitarray
 
@@ -66,7 +78,7 @@ def calculate_ips(network_bitarray, host_bitarray):
     network_ip = network_bitarray & inverted_host_bitarray
     broadcast_ip = network_ip | host_bitarray
 
-    return network_ip, broadcast_ip
+    return network_ip, broadcast_ip, inverted_host_bitarray
 
 def cidr_check(network_bitarray, host_bitarray):
     return None
